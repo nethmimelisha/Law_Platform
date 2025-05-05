@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Backend API service
+  api:
+    build: ./law-platform-server
+    container_name: law-platform-api
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_DIALECT=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=law_platform
+      - DB_USER=law_user
+      - DB_PASSWORD=law_password
+      - JWT_SECRET=your-jwt-secret
+    volumes:
+      - ./law-platform-server/uploads:/usr/src/app/uploads
+    networks:
+      - law-platform-network
+
+  # Frontend service
+  client:
+    build: ./law-platform-client
+    container_name: law-platform-client
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:5000/api
+    networks:
+      - law-platform-network
+
+  # Database service
+  db:
+    image: mysql:8.0
+    container_name: law-platform-db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=law_platform
+      - MYSQL_USER=law_user
+      - MYSQL_PASSWORD=law_password
+    volumes:
+      - law-platform-data:/var/lib/mysql
+    networks:
+      - law-platform-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Database admin tool
+  adminer:
+    image: adminer
+    container_name: law-platform-adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - law-platform-network
+    depends_on:
+      - db
+
+volumes:
+  law-platform-data:
+
+networks:
+  law-platform-network:
+    driver: bridge
